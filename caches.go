@@ -44,6 +44,7 @@ func (c *Caches) Initialize(db *gorm.DB) error {
 	if c.Conf.Easer {
 		c.queue = &sync.Map{}
 	}
+	c.tmp = &Tmp{}
 
 	callbacks := make(map[queryType]func(db *gorm.DB), 4)
 	callbacks[uponQuery] = db.Callback().Query().Get("gorm:query")
@@ -67,14 +68,14 @@ func (c *Caches) Initialize(db *gorm.DB) error {
 	if err := db.Callback().Delete().Replace("gorm:query", c.getMutatorCb(uponDelete)); err != nil {
 		return err
 	}
-
 	return nil
 }
 
 // query is a decorator around the default "gorm:query" callback
 // it takes care to both ease database load and cache results
 func (c *Caches) query(db *gorm.DB) {
-	if !c.Conf.Easer {
+
+	if c.Conf.Easer == false && c.Conf.Cacher == nil {
 		c.callbacks[uponQuery](db)
 		return
 	}
@@ -86,13 +87,12 @@ func (c *Caches) query(db *gorm.DB) {
 	if c.checkCache(db, identifier) {
 		return
 	}
-
 	c.ease(db, identifier)
 	if db.Error != nil {
 		return
 	}
 
-	c.storeInCache(db, identifier)
+	c.storeInCache(db, identifier, c.tmp.Dur)
 
 	if db.Error != nil {
 		return
@@ -150,6 +150,7 @@ func (c *Caches) ease(db *gorm.DB, identifier string) {
 }
 
 func (c *Caches) checkCache(db *gorm.DB, identifier string) bool {
+
 	if c.Conf.Cacher != nil {
 		res, err := c.Conf.Cacher.Get(db.Statement.Context, identifier, &Query[any]{
 			Dest:         db.Statement.Dest,

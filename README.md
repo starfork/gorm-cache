@@ -6,5 +6,8 @@ https://github.com/go-gorm/caches
 
 
 ## Edit 
-buildIdentifier
+1. buildIdentifier
+2. Cache Duration
+3. Cache Scope
+
 

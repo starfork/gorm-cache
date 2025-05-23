@@ -23,7 +23,7 @@ func buildIdentifier(db *gorm.DB, prefix ...string) string {
 	query := db.Statement.SQL.String()
 	queryArgs := valueToString(db.Statement.Vars)
 	pfx := IdentifierPrefix
-	if len(prefix) > 0 {
+	if len(prefix) > 0 && prefix[0] != "" {
 		pfx = prefix[0]
 	}
 	identifier := fmt.Sprintf("%s%s-%s", pfx, query, queryArgs)
